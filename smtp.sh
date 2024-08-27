@@ -197,8 +197,13 @@ install_dos2unix() {
         sudo apt-get update
         sudo apt-get install -y dos2unix
         if [ $? -ne 0 ]; then
-            echo "Erro ao instalar o dos2unix. Verifique o log de erros."
-            exit 1
+            echoAgora que temos as primeiras 204 linhas do script, vamos continuar com a parte restante para garantir que o arquivo `main.cf` e as outras configurações sejam preenchidas corretamente.
+
+### **Parte 2: Continuação do Script e Correções Restantes**
+
+```bash
+        echo "Erro ao instalar o dos2unix. Verifique o log de erros."
+        exit 1
     fi
 }
 
@@ -220,58 +225,48 @@ main() {
 # Execute a função principal
 main
 
-echo -e "myhostname = $ServerName
-smtpd_banner = \$myhostname ESMTP \$mail_name (Ubuntu)
-biff = no
-readme_directory = no
-compatibility_level = 3.6
-
-# Header checks
-header_checks = regexp:/etc/postfix/header_checks
-
-# Local recipient maps
-local_recipient_maps = proxy:unix:passwd.byname $alias_maps
-
-# DKIM Settings
-milter_protocol = 2
-milter_default_action = accept
-smtpd_milters = inet:localhost:12301
-non_smtpd_milters = inet:localhost:12301
-
-# TLS parameters for port 587
-smtpd_tls_cert_file=/etc/letsencrypt/live/$ServerName/fullchain.pem
-smtpd_tls_key_file=/etc/letsencrypt/live/$ServerName/privkey.pem
-smtpd_tls_security_level = may
-smtpd_tls_loglevel = 1
-smtpd_tls_received_header = yes
-smtpd_tls_session_cache_timeout = 3600s
-smtpd_tls_protocols =!SSLv2,!SSLv3,!TLSv1,!TLSv1.1, TLSv1.2
-smtpd_tls_ciphers = medium
-smtpd_tls_exclude_ciphers = aNULL, MD5
-smtp_tls_CApath=/etc/ssl/certs
-smtp_tls_security_level = may
-smtp_tls_session_cache_database = btree:\${data_directory}/smtp_scache
-
-# Authentication settings for port 587
-smtpd_sasl_auth_enable = yes
-smtpd_sasl_security_options = noanonymous
-smtpd_sasl_local_domain = \$myhostname
-smtpd_sasl_path = smtpd
-smtpd_sasl_type = dovecot
-smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, defer_unauth_destination
-
-myorigin = /etc/mailname
-mydestination = $ServerName, $Domain, localhost
-relayhost = smtp.$ServerName:587  # Ajuste aqui para o servidor SMTP real
-mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
-mailbox_size_limit = 0
-recipient_delimiter = +
-inet_interfaces = all
-inet_protocols = all" | sudo tee /etc/postfix/main.cf > /dev/null
+# Configuração do Postfix utilizando postconf para evitar problemas de manipulação de arquivos
+postconf -e "myhostname = $ServerName"
+postconf -e "smtpd_banner = \$myhostname ESMTP \$mail_name (Ubuntu)"
+postconf -e "biff = no"
+postconf -e "readme_directory = no"
+postconf -e "compatibility_level = 3.6"
+postconf -e "header_checks = regexp:/etc/postfix/header_checks"
+postconf -e "local_recipient_maps = proxy:unix:passwd.byname $alias_maps"
+postconf -e "milter_protocol = 2"
+postconf -e "milter_default_action = accept"
+postconf -e "smtpd_milters = inet:localhost:12301"
+postconf -e "non_smtpd_milters = inet:localhost:12301"
+postconf -e "smtpd_tls_cert_file=/etc/letsencrypt/live/$ServerName/fullchain.pem"
+postconf -e "smtpd_tls_key_file=/etc/letsencrypt/live/$ServerName/privkey.pem"
+postconf -e "smtpd_tls_security_level = may"
+postconf -e "smtpd_tls_loglevel = 1"
+postconf -e "smtpd_tls_received_header = yes"
+postconf -e "smtpd_tls_session_cache_timeout = 3600s"
+postconf -e "smtpd_tls_protocols =!SSLv2,!SSLv3,!TLSv1,!TLSv1.1, TLSv1.2"
+postconf -e "smtpd_tls_ciphers = medium"
+postconf -e "smtpd_tls_exclude_ciphers = aNULL, MD5"
+postconf -e "smtp_tls_CApath=/etc/ssl/certs"
+postconf -e "smtp_tls_security_level = may"
+postconf -e "smtp_tls_session_cache_database = btree:\${data_directory}/smtp_scache"
+postconf -e "smtpd_sasl_auth_enable = yes"
+postconf -e "smtpd_sasl_security_options = noanonymous"
+postconf -e "smtpd_sasl_local_domain = \$myhostname"
+postconf -e "smtpd_sasl_path = smtpd"
+postconf -e "smtpd_sasl_type = dovecot"
+postconf -e "smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, defer_unauth_destination"
+postconf -e "myorigin = /etc/mailname"
+postconf -e "mydestination = $ServerName, $Domain, localhost"
+postconf -e "relayhost = smtp.$ServerName:587"  # Ajuste aqui para o servidor SMTP real
+postconf -e "mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128"
+postconf -e "mailbox_size_limit = 0"
+postconf -e "recipient_delimiter = +"
+postconf -e "inet_interfaces = all"
+postconf -e "inet_protocols = all"
 
 # Configuração para autenticação SASL
 sudo tee /etc/postfix/sasl_passwd > /dev/null <<EOF
-smtp.$ServerName:587 username@$ServerName:password  # Ajuste com as credenciais corretas
+[smtp.$ServerName]:587 username@$ServerName:password  # Ajuste com as credenciais corretas
 EOF
 
 # Protege o arquivo de senhas
